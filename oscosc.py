@@ -36,6 +36,7 @@ class Scope:
         # launch receiver thread
         self.receiver = receiver.Receiver()
         self.receiver.start_thread(12345)
+
         # rendering loop
         glfw.make_context_current(self.window)
         while not glfw.window_should_close(self.window):
@@ -43,6 +44,7 @@ class Scope:
             self.draw()
             glfw.swap_buffers(self.window)
             glfw.poll_events()
+
         # cleanup
         self.receiver.stop_thread()
     
@@ -54,7 +56,7 @@ class Scope:
         glClear(GL_COLOR_BUFFER_BIT)
 
         glPushMatrix()
-        glScale(0.3, 0.3, 1)
+        glScaled(0.3, 0.3, 1)
 
         self.draw_grid()
         self.plot()
@@ -83,9 +85,19 @@ class Scope:
 
     # Plot data sequences
     def plot(self):
+        glPushMatrix()
+        # t=0 is the left end of the grid
+        glTranslated(-self.num_divs_h * self.time_per_div / 2, 0, 0)
+        # scroll
+        glTranslated(
+                -max(0, glfw.get_time() - self.num_divs_h*self.time_per_div),
+                0, 0)
+
         for i, pair in enumerate(self.lines.items()):
             addr, line = pair
             self.plot_line(line, LINE_COLORS[i % len(LINE_COLORS)])
+
+        glPopMatrix()
 
     # Plot single line
     def plot_line(self, line, color):
@@ -102,6 +114,7 @@ class Scope:
             if not self.time_offset_ready:
                 self.time_offset = timestamp
                 self.time_offset_ready = True
+                glfw.set_time(0)
             for msg in msgs:
                 self.add_data(msg, timestamp, sender)
 
