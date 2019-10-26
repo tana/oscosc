@@ -6,6 +6,9 @@ from pythonosc import osc_bundle
 from pythonosc import osc_message
 from pythonosc import osc_bundle_builder
 
+MAX_DATA_SIZE = 1024
+TIMEOUT = 1.0
+
 class Receiver:
     def __init__(self):
         self.queue = queue.Queue()
@@ -20,15 +23,16 @@ class Receiver:
         self.thr.join()
 
     def listen_udp(self, port):
-        max_data_size = 1024
         with socket.socket(
                 family=socket.AF_INET, type=socket.SOCK_DGRAM) as sock:
             sock.bind(('', port))
-            # TODO timeout or something.
-            # should_stop might be not effective
+            sock.settimeout(TIMEOUT)
             while not self.should_stop:
-                data, sender = sock.recvfrom(max_data_size)
-                self.process(data, sender)
+                try:
+                    data, sender = sock.recvfrom(MAX_DATA_SIZE)
+                    self.process(data, sender)
+                except socket.timeout:
+                    pass
     
     def get(self):
         return self.queue.get(block=False)

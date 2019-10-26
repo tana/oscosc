@@ -5,6 +5,7 @@ if __name__ == '__main__':
     recv = receiver.Receiver()
     recv.start_thread(12345)
     try:
+        print('Press Ctrl-C to stop')
         while True:
             while recv.available():
                 msgs = recv.get()
