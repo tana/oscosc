@@ -4,6 +4,8 @@ import collections
 import glfw
 from OpenGL.GL import *
 from OpenGL.GLU import *
+import imgui
+from imgui.integrations.glfw import GlfwRenderer
 import receiver
 
 LINE_COLORS = [
@@ -14,6 +16,14 @@ MAX_POINTS = 1000
 
 class Scope:
     def __init__(self):
+        # pyimgui GLFW backend uses Programmable Pipeline.
+        # (See the definition of GlfwRenderer at https://github.com/swistakm/pyimgui/blob/master/imgui/integrations/glfw.py)
+        # GLFW initializes OpenGL 1.0 by default (cf. https://www.glfw.org/docs/latest/window_guide.html#window_hints_values ), window hints are needed.
+        glfw.window_hint(glfw.CONTEXT_VERSION_MAJOR, 3)
+        glfw.window_hint(glfw.CONTEXT_VERSION_MINOR, 2)
+        glfw.window_hint(glfw.OPENGL_FORWARD_COMPAT, glfw.TRUE)
+        glfw.window_hint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
+
         self.window = glfw.create_window(640, 480, "oscosc", None, None)
 
         self.y_per_div = 0.5
@@ -37,13 +47,21 @@ class Scope:
         self.receiver = receiver.Receiver()
         self.receiver.start_thread(12345)
 
-        # rendering loop
+        # OpenGL context must be made current before GlfwRenderer init
+        # Forgetting this leads to a NullFunctionError of glGenVertexArrays
         glfw.make_context_current(self.window)
+        # Initialize IMGUI for GLFW
+        # (See https://github.com/swistakm/pyimgui/blob/master/doc/examples/integrations_glfw3.py)
+        imgui.create_context()
+        self.imgui_renderer = GlfwRenderer(self.window)
+
+        # rendering loop
         while not glfw.window_should_close(self.window):
             self.process_messages()
+            self.imgui_renderer.process_inputs()
             self.draw()
             glfw.swap_buffers(self.window)
-            glfw.poll_events()
+            glfw.poll_event()
 
         # cleanup
         self.receiver.stop_thread()
@@ -54,6 +72,8 @@ class Scope:
 
         glClearColor(0.0, 0.0, 0.0, 1.0)
         glClear(GL_COLOR_BUFFER_BIT)
+
+        self.do_gui()
 
         glPushMatrix()
         glScaled(0.3, 0.3, 1)
@@ -123,6 +143,16 @@ class Scope:
         if msg.address in self.lines:
             self.lines[msg.address].append(
                     (timestamp, msg.params[0]))
+
+    def do_gui(self):
+        imgui.new_frame()
+
+        imgui.begin("win", closable=False)
+        imgui.text("hoge")
+        imgui.end()
+
+        imgui.render()
+        self.imgui_renderer.render(imgui.get_draw_data())
 
 if __name__ == '__main__':
     if not glfw.init():
