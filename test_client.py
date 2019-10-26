@@ -23,9 +23,9 @@ if __name__ == '__main__':
     while True:
         x = math.cos(2 * math.pi * t)
         y = math.sin(2 * math.pi * t)
-        #bundle = make_bundle(x=x, y=y)
-        #client.send(bundle)
-        client.send_message('/x', x)
-        client.send_message('/y', y)
+        bundle = make_bundle(x=x, y=y)
+        client.send(bundle)
+        #client.send_message('/x', x)
+        #client.send_message('/y', y)
         time.sleep(0.1)
         t += 0.1
