@@ -1,11 +1,14 @@
 import sys
 import math
 import collections
-import glfw
+import time
+import pyglet
+# pyglet has its own OpenGL wrapper but it needs ctypes arguments.
+# However PyOpenGL can be used.
+# (See https://pyglet.readthedocs.io/en/stable/programming_guide/gl.html )
 from OpenGL.GL import *
-from OpenGL.GLU import *
 import imgui
-from imgui.integrations.glfw import GlfwRenderer
+from imgui.integrations.pyglet import PygletRenderer
 import receiver
 
 LINE_COLORS = [
@@ -14,17 +17,9 @@ LINE_COLORS = [
 
 MAX_POINTS = 1000
 
-class Scope:
+class Scope(pyglet.window.Window):
     def __init__(self):
-        # pyimgui GLFW backend uses Programmable Pipeline.
-        # (See the definition of GlfwRenderer at https://github.com/swistakm/pyimgui/blob/master/imgui/integrations/glfw.py)
-        # GLFW initializes OpenGL 1.0 by default (cf. https://www.glfw.org/docs/latest/window_guide.html#window_hints_values ), window hints are needed.
-        glfw.window_hint(glfw.CONTEXT_VERSION_MAJOR, 3)
-        glfw.window_hint(glfw.CONTEXT_VERSION_MINOR, 2)
-        glfw.window_hint(glfw.OPENGL_FORWARD_COMPAT, glfw.TRUE)
-        glfw.window_hint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
-
-        self.window = glfw.create_window(640, 480, "oscosc", None, None)
+        super().__init__(caption="oscosc", resizable=True)
 
         self.y_per_div = 0.5
         self.time_per_div = 0.5
@@ -42,38 +37,38 @@ class Scope:
         self.time_offset = 0.0
         self.time_offset_ready = False
 
-    def run(self):
+        self.start_time = 0.0
+
         # launch receiver thread
         self.receiver = receiver.Receiver()
         self.receiver.start_thread(12345)
 
-        # OpenGL context must be made current before GlfwRenderer init
-        # Forgetting this leads to a NullFunctionError of glGenVertexArrays
-        glfw.make_context_current(self.window)
-        # Initialize IMGUI for GLFW
-        # (See https://github.com/swistakm/pyimgui/blob/master/doc/examples/integrations_glfw3.py)
+        # Initialize IMGUI for pyglet
+        # (See https://github.com/swistakm/pyimgui/blob/master/doc/examples/integrations_pyglet.py)
         imgui.create_context()
-        self.imgui_renderer = GlfwRenderer(self.window)
+        self.imgui_renderer = PygletRenderer(self)
 
-        # rendering loop
-        while not glfw.window_should_close(self.window):
-            self.process_messages()
-            self.imgui_renderer.process_inputs()
-            self.draw()
-            glfw.swap_buffers(self.window)
-            glfw.poll_event()
+        pyglet.clock.schedule_interval(self.update, 1 / 60)
 
+    # called 60 times per second
+    def update(self, dt):
+        # In pyglet, state update is separated from drawing
+        self.process_messages()
+        self.do_gui()
+
+    def on_close(self):
+        super().on_close()
         # cleanup
         self.receiver.stop_thread()
-    
-    def draw(self):
-        width, height = glfw.get_framebuffer_size(self.window)
+        self.imgui_renderer.shutdown()
+
+    def on_resize(self, width, height):
         glViewport(0, 0, width, height)
 
+    # called each frame
+    def on_draw(self):
         glClearColor(0.0, 0.0, 0.0, 1.0)
         glClear(GL_COLOR_BUFFER_BIT)
-
-        self.do_gui()
 
         glPushMatrix()
         glScaled(0.3, 0.3, 1)
@@ -82,6 +77,10 @@ class Scope:
         self.plot()
 
         glPopMatrix()
+
+        # GUI comes in front of other things
+        imgui.render()
+        self.imgui_renderer.render(imgui.get_draw_data())
 
     def draw_grid(self):
         glColor3dv(self.grid_color)
@@ -110,7 +109,7 @@ class Scope:
         glTranslated(-self.num_divs_h * self.time_per_div / 2, 0, 0)
         # scroll
         glTranslated(
-                -max(0, glfw.get_time() - self.num_divs_h*self.time_per_div),
+                -max(0, self.get_time() - self.num_divs_h*self.time_per_div),
                 0, 0)
 
         for i, pair in enumerate(self.lines.items()):
@@ -134,7 +133,7 @@ class Scope:
             if not self.time_offset_ready:
                 self.time_offset = timestamp
                 self.time_offset_ready = True
-                glfw.set_time(0)
+                self.start_time = time.time()
             for msg in msgs:
                 self.add_data(msg, timestamp, sender)
 
@@ -151,15 +150,9 @@ class Scope:
         imgui.text("hoge")
         imgui.end()
 
-        imgui.render()
-        self.imgui_renderer.render(imgui.get_draw_data())
+    def get_time(self):
+        return time.time() - self.start_time
 
 if __name__ == '__main__':
-    if not glfw.init():
-        sys.exit(-1)
-    
-    try:
-        scope = Scope()
-        scope.run()
-    finally:
-        glfw.terminate()
+    scope = Scope()
+    pyglet.app.run()
