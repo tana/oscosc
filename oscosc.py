@@ -79,7 +79,6 @@ class Scope(pyglet.window.Window):
         glPopMatrix()
 
         # GUI comes in front of other things
-        imgui.render()
         self.imgui_renderer.render(imgui.get_draw_data())
 
     def draw_grid(self):
@@ -149,6 +148,10 @@ class Scope(pyglet.window.Window):
         imgui.begin("win", closable=False)
         imgui.text("hoge")
         imgui.end()
+
+        # imgui.render() in on_draw caused a "newFrame is not called" error on Windows,
+        # therefore we invoke it here
+        imgui.render()
 
     def get_time(self):
         return time.time() - self.start_time
