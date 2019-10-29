@@ -17,12 +17,15 @@ LINE_COLORS = [
 
 MAX_POINTS = 1000
 
+TIME_PER_DIV_OPTIONS = [10.0, 5.0, 1.0, 0.5, 0.1, 0.05, 0.01]
+
 class Scope(pyglet.window.Window):
     def __init__(self):
         super().__init__(caption="oscosc", resizable=True)
 
         self.y_per_div = 0.5
         self.time_per_div = 0.5
+        self.time_per_div_selected = 3
 
         self.num_divs_v = 8
         self.num_divs_h = 8
@@ -146,7 +149,13 @@ class Scope(pyglet.window.Window):
         imgui.new_frame()
 
         imgui.begin("win", closable=False)
-        imgui.text("hoge")
+
+        changed, self.time_per_div_selected = imgui.combo(
+            "TIME/DIV", self.time_per_div_selected,
+            [str(option) for option in TIME_PER_DIV_OPTIONS])
+        if changed:
+            self.time_per_div = TIME_PER_DIV_OPTIONS[self.time_per_div_selected]
+
         imgui.end()
 
         # imgui.render() in on_draw caused a "newFrame is not called" error on Windows,
