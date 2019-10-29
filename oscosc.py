@@ -74,7 +74,12 @@ class Scope(pyglet.window.Window):
         glClear(GL_COLOR_BUFFER_BIT)
 
         glPushMatrix()
-        glScaled(0.3, 0.3, 1)
+        glScaled(0.7, 0.7, 1)
+
+        glScaled(
+            2 / (self.time_per_div * self.num_divs_h),
+            2 / (self.y_per_div * self.num_divs_v),
+            1)
 
         self.draw_grid()
         self.plot()
