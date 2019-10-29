@@ -162,11 +162,21 @@ class Scope(pyglet.window.Window):
             [str(option) for option in TIME_PER_DIV_OPTIONS])
         if changed:
             self.time_per_div = TIME_PER_DIV_OPTIONS[self.time_per_div_selected]
+
         changed, self.y_per_div_selected = imgui.combo(
             "Y/DIV", self.y_per_div_selected,
             [str(option) for option in Y_PER_DIV_OPTIONS])
         if changed:
             self.y_per_div = Y_PER_DIV_OPTIONS[self.y_per_div_selected]
+
+        imgui.text("Values")
+        # TODO
+        for addr in ["/x", "/y"]:
+            changed, selected = imgui.selectable(addr, addr in self.lines)
+            if changed and selected:
+                self.lines[addr] = collections.deque(maxlen=MAX_POINTS)
+            elif changed and not selected:
+                del self.lines[addr]
 
         imgui.end()
 
