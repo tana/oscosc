@@ -35,14 +35,15 @@ class Scope(pyglet.window.Window):
         self.grid_color = (0.7, 0.7, 0.7)
         
         self.lines = dict()
-        self.lines['/x'] = collections.deque(maxlen=MAX_POINTS)
-        self.lines['/y'] = collections.deque(maxlen=MAX_POINTS)
 
         # Use timestamp of the first received OSC message or bundle as t=0
         self.time_offset = 0.0
         self.time_offset_ready = False
 
         self.start_time = 0.0
+
+        # List of OSC addresses received
+        self.addresses = set()
 
         # launch receiver thread
         self.receiver = receiver.Receiver()
@@ -148,6 +149,7 @@ class Scope(pyglet.window.Window):
 
     def add_data(self, msg, timestamp, sender):
         # TODO currently, wildcard in OSC address is not supported
+        self.addresses.add(msg.address)
         if msg.address in self.lines:
             self.lines[msg.address].append(
                     (timestamp, msg.params[0]))
@@ -170,8 +172,7 @@ class Scope(pyglet.window.Window):
             self.y_per_div = Y_PER_DIV_OPTIONS[self.y_per_div_selected]
 
         imgui.text("Values")
-        # TODO
-        for addr in ["/x", "/y"]:
+        for addr in self.addresses:
             changed, selected = imgui.selectable(addr, addr in self.lines)
             if changed and selected:
                 self.lines[addr] = collections.deque(maxlen=MAX_POINTS)
