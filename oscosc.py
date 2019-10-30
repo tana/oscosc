@@ -35,6 +35,7 @@ class Scope(pyglet.window.Window):
         self.grid_color = (0.7, 0.7, 0.7)
         
         self.lines = dict()
+        self.line_colors = dict()
 
         # Use timestamp of the first received OSC message or bundle as t=0
         self.time_offset = 0.0
@@ -122,9 +123,12 @@ class Scope(pyglet.window.Window):
                 -max(0, self.get_time() - self.num_divs_h*self.time_per_div),
                 0, 0)
 
+        self.line_colors.clear()    # TODO reconsider
         for i, pair in enumerate(self.lines.items()):
             addr, line = pair
-            self.plot_line(line, LINE_COLORS[i % len(LINE_COLORS)])
+            color = LINE_COLORS[i % len(LINE_COLORS)]
+            self.plot_line(line, color)
+            self.line_colors[addr] = color
 
         glPopMatrix()
 
@@ -173,11 +177,21 @@ class Scope(pyglet.window.Window):
 
         imgui.text("Values")
         for addr in self.addresses:
+            color_changed = False
+            if addr in self.lines:
+                # Change text color to indicate the color of plot
+                r, g, b = self.line_colors[addr]
+                imgui.push_style_color(imgui.COLOR_TEXT, r, g, b)
+                color_changed = True
+
             changed, selected = imgui.selectable(addr, addr in self.lines)
             if changed and selected:
                 self.lines[addr] = collections.deque(maxlen=MAX_POINTS)
             elif changed and not selected:
                 del self.lines[addr]
+
+            if color_changed:
+                imgui.pop_style_color()
 
         imgui.end()
 
