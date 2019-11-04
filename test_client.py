@@ -2,6 +2,7 @@
 # (See https://github.com/attwad/python-osc )
 import math
 import time
+import argparse
 from pythonosc import osc_bundle_builder
 from pythonosc import osc_message_builder
 from pythonosc import udp_client
@@ -17,8 +18,13 @@ def make_bundle(**kwargs):
     return bb.build()
 
 if __name__ == '__main__':
+    ap = argparse.ArgumentParser()
+    ap.add_argument('-p', '--port', type=int, default=12345)
+    ap.add_argument('-s', '--server', default='127.0.0.1')
+    settings = ap.parse_args()
+
     print('Ctrl-C to quit')
-    client = udp_client.SimpleUDPClient('127.0.0.1', 12345)
+    client = udp_client.SimpleUDPClient(settings.server, settings.port)
     t = 0.0
     while True:
         x = math.cos(2 * math.pi * t)

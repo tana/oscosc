@@ -2,6 +2,7 @@ import sys
 import math
 import collections
 import time
+import argparse
 import pyglet
 # pyglet has its own OpenGL wrapper but it needs ctypes arguments.
 # However PyOpenGL can be used.
@@ -10,6 +11,8 @@ from OpenGL.GL import *
 import imgui
 from imgui.integrations.pyglet import PygletRenderer
 import receiver
+
+DEFAULT_PORT = 12345
 
 LINE_COLORS = [
         (0, 1, 0), (1, 0, 0), (0, 0, 1),
@@ -21,8 +24,8 @@ TIME_PER_DIV_OPTIONS = [10.0, 5.0, 1.0, 0.5, 0.1, 0.05, 0.01]
 Y_PER_DIV_OPTIONS = [10.0, 5.0, 1.0, 0.5, 0.1, 0.05, 0.01]
 
 class Scope(pyglet.window.Window):
-    def __init__(self):
-        super().__init__(caption="oscosc", resizable=True)
+    def __init__(self, port=DEFAULT_PORT):
+        super().__init__(caption=f"oscosc (port {port})", resizable=True)
 
         self.y_per_div = 0.5
         self.time_per_div = 0.5
@@ -48,7 +51,7 @@ class Scope(pyglet.window.Window):
 
         # launch receiver thread
         self.receiver = receiver.Receiver()
-        self.receiver.start_thread(12345)
+        self.receiver.start_thread(port)
 
         # Initialize IMGUI for pyglet
         # (See https://github.com/swistakm/pyimgui/blob/master/doc/examples/integrations_pyglet.py)
@@ -203,5 +206,11 @@ class Scope(pyglet.window.Window):
         return time.time() - self.start_time
 
 if __name__ == '__main__':
-    scope = Scope()
+    ap = argparse.ArgumentParser()
+    ap.add_argument('-p', '--port',
+            type=int, default=DEFAULT_PORT,
+            help=f"set port number to listen on (default={DEFAULT_PORT})")
+    settings = ap.parse_args()
+
+    scope = Scope(port=settings.port)
     pyglet.app.run()
