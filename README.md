@@ -2,6 +2,8 @@
 oscosc is an oscilloscope for software.
 In other words, oscosc plots numerical data via [Open Sound Control](http://opensoundcontrol.org/).
 
+![screencast](screencast.gif)
+
 ## Features
 - Real-time plotting of multiple numerical values
 - Uses Open Sound Control (OSC) for communication
