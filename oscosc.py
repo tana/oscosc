@@ -33,12 +33,14 @@ class Scope(pyglet.window.Window):
         self.time_per_div_selected = 3
 
         self.num_divs_v = 8
-        self.num_divs_h = 8
+        self.num_divs_h = 10
 
         self.grid_color = (0.7, 0.7, 0.7)
         
         self.lines = dict()
         self.line_colors = dict()
+
+        self.gui_width = 0
 
         # Use timestamp of the first received OSC message or bundle as t=0
         self.time_offset = 0.0
@@ -81,7 +83,14 @@ class Scope(pyglet.window.Window):
         glClear(GL_COLOR_BUFFER_BIT)
 
         glPushMatrix()
-        glScaled(0.7, 0.7, 1)
+
+        glTranslated(-self.gui_width / self.width, 0, 0)
+        grid_aspect = self.num_divs_h / self.num_divs_v
+        grid_width = min(
+                self.width - self.gui_width,
+                grid_aspect * self.height)
+        glScaled(grid_width / self.width, grid_width / grid_aspect / self.height, 1)
+        glScaled(0.95, 0.95, 1) # for margin
 
         glScaled(
             2 / (self.time_per_div * self.num_divs_h),
@@ -164,7 +173,9 @@ class Scope(pyglet.window.Window):
     def do_gui(self):
         imgui.new_frame()
 
-        imgui.begin("win", closable=False)
+        imgui.set_next_window_position(self.width, 0, pivot_x=1.0)
+        imgui.begin("win", closable=False,
+                flags = imgui.WINDOW_NO_TITLE_BAR | imgui.WINDOW_NO_MOVE | imgui.WINDOW_NO_RESIZE)
 
         changed, self.time_per_div_selected = imgui.combo(
             "TIME/DIV", self.time_per_div_selected,
@@ -195,6 +206,8 @@ class Scope(pyglet.window.Window):
 
             if color_changed:
                 imgui.pop_style_color()
+
+        self.gui_width = imgui.get_window_width()
 
         imgui.end()
 
