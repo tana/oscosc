@@ -102,8 +102,11 @@ class Scope(pyglet.window.Window):
 
         glPopMatrix()
 
-        # GUI comes in front of other things
-        self.imgui_renderer.render(imgui.get_draw_data())
+        # If imgui.get_draw_data() is None, skip rendering
+        # (Maybe on_draw is called before update on Linux)
+        if imgui.get_draw_data() is not None:
+            # GUI comes in front of other things
+            self.imgui_renderer.render(imgui.get_draw_data())
 
     def draw_grid(self):
         glColor3dv(self.grid_color)
