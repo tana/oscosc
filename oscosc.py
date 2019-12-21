@@ -177,6 +177,7 @@ class Scope(pyglet.window.Window):
         imgui.new_frame()
 
         imgui.set_next_window_position(self.width, 0, pivot_x=1.0)
+        imgui.set_next_window_size(0.0, self.height)
         imgui.begin("win", closable=False,
                 flags = imgui.WINDOW_NO_TITLE_BAR | imgui.WINDOW_NO_MOVE | imgui.WINDOW_NO_RESIZE)
 
